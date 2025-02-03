@@ -1,0 +1,58 @@
+# docker-compose file to start up Laravel application in https://example.com
+# to start the container run:
+#       docker-compose up -d
+#
+# Note: Bind mounts for laravel
+#       ./www:/var/www -- Laravel app base folder
+#       ./www/public:/var/www/html -- Apache DocumentRoot is mapped to Laravel public folder
+#
+# Note2: containrrr/watchtower service will auto update this container
+
+version: "2.4"
+
+name: videohub
+
+services:
+  videohub:
+    image: rsubr/php-apache-ubuntu:jammy
+    container_name: videohub.bit.lan
+    restart: always
+
+    ports:
+      - 8000:80
+
+    volumes:
+      - ./www:/var/www
+      - ./www/public:/var/www/html
+      - ./etc/php/8.1/apache2/conf.d/99-local.ini:/etc/php/8.1/apache2/conf.d/99-local.ini:ro
+      - ./etc/apache2/mods-enabled/mpm_prefork.conf:/etc/apache2/mods-enabled/mpm_prefork.conf:ro
+
+    mem_limit: 2G
+
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+        # - traefik.enable=true
+        # - traefik.http.routers.prosafe.rule=Host(`example.com`)
+        # - traefik.http.routers.prosafe.tls=true
+        # - traefik.http.routers.prosafe.tls.certresolver=lets-encrypt
+
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0-debian
+    container_name: videohub-mysql.bit.lan
+    restart: always
+
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+
+    ports:
+      - 3306:3306
+
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      - ./mysql-conf/my.cnf:/root/.my.cnf
